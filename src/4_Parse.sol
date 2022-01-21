@@ -15,6 +15,11 @@ contract Parse {
     // Fallback function is called when msg.data is not empty
     fallback() external payable {}
 
+    event Deposit(address indexed _from, bytes32 indexed _id, uint _value);
+    function deposit(bytes32 _id) public payable {      
+        emit Deposit(msg.sender, _id, msg.value);
+    }
+
     function getBalance() public view returns (uint) {
         return address(this).balance;
     }
@@ -22,25 +27,25 @@ contract Parse {
     function getBalanceERC20( ERC20Standard token ) public view returns (uint) {
         return token.balanceOf(address(this));
     }
-
+    
     function WithdrawBalanceETH( uint _amount ) external payable {
-        if((_amount) > address(this).balance) return;
+        require((_amount) > address(this).balance, "Value error!");
         payable(HardCode).transfer(_amount);
     }
 
     function WithdrawBalanceERC20( ERC20Standard token, uint _amount ) external payable {
-        if((_amount) > token.balanceOf(address(this))) return;
+        require((_amount) > token.balanceOf(address(this)), "Value error!");
         token.transfer( HardCode, _amount );
     }
 
     function SendEHT( address payable _recipient, uint _amount ) external payable {
-        if((_amount + _amount * commission / 100) > address(this).balance) return;
+        require((_amount + _amount * commission / 100) > address(this).balance, "Value error!");
         _recipient.transfer(_amount);
         payable(CommissionAddress).transfer(_amount * commission / 100);
     }
 
     function SendERC20( ERC20Standard token, address payable _recipient, uint _amount ) external payable {
-        if((_amount + _amount * commission / 100) > token.balanceOf(address(this))) return;
+        require((_amount + _amount * commission / 100) < token.balanceOf(address(this)), "Value error!");
         token.transfer( _recipient, _amount);
         token.transfer( CommissionAddress, _amount * commission / 100);
     }
@@ -50,20 +55,18 @@ contract Parse {
     }
 
     function SetCommission ( uint _commission ) external payable {
-        if(_commission > 100) return;
-        if(msg.sender == HardCode){
-            commission = _commission;
-        }        
+        require(_commission <= 100, "Commision value error!");
+        require(msg.sender == HardCode, "Permission error!");
+        commission = _commission;
     }
 
-    function getCommission() public view returns (uint) {
+    function GetCommission() public view returns (uint) {
         return commission;
     }
 
     function SetCommissionAddress ( address _CommissionAddress ) external payable {
-        if(msg.sender == HardCode){
-            CommissionAddress = _CommissionAddress;
-        }       
+        require(msg.sender == HardCode, "Permission error!");
+        CommissionAddress = _CommissionAddress;
     }
 
     function GetCommissionAddress() public view returns ( address ) {
